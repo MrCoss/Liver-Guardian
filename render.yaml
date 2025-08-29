@@ -1,9 +1,6 @@
-# render.yaml — Deploys FastAPI backend and React frontend
-
 repo: https://github.com/MrCoss/Liver-Guardian
-
 services:
-  # ---------------- Backend Service (FastAPI) ----------------
+  # Backend (FastAPI)
   - type: web
     name: liverguardian-backend
     env: python
@@ -16,11 +13,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11
-      # Optional: Add any secret keys here
-      # - key: SECRET_KEY
-      #   value: your_secret_value
 
-  # ---------------- Frontend Service (React SPA) ----------------
+  # Frontend (React SPA)
   - type: web
     name: liverguardian-frontend
     env: static
@@ -29,11 +23,10 @@ services:
     branch: main
     rootDir: ./frontend
     buildCommand: "npm install && npm run build"
-    publishDir: ./frontend/build
+    publishDir: ./build
     envVars:
-      # Make sure this matches the backend URL Render provides
       - key: REACT_APP_API_URL
-        value: "https://liverguardian-backend.onrender.com"
+        value: "${LIVERGUARDIAN_BACKEND_URL}"
     routes:
       - type: rewrite
         source: /*
