@@ -16,14 +16,12 @@ import joblib
 import uvicorn
 
 # --- Basic Logging Configuration ---
-# Sets up a logger to output messages with a timestamp, level, and message.
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 # --- Configuration Management ---
-# Uses Pydantic to manage settings from environment variables with defaults.
 class Settings(BaseSettings):
     MODEL_FILE: str = "liver_cirrhosis_model.joblib"
     DATA_FILE: str = "liver_cirrhosis_clean.csv"
@@ -38,7 +36,6 @@ app = FastAPI(
 )
 
 # --- CORS Configuration ---
-# Allows the frontend application to communicate with this API.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -58,59 +55,19 @@ FEATURE_NAMES = [
     "Alk_Phos", "SGOT", "Tryglicerides", "Platelets", "Prothrombin"
 ]
 
-# --- Model Training ---
-def train_model() -> Pipeline:
-    """Trains a new model using the data file and saves it."""
-    logging.info(f"Starting model training with data from '{settings.DATA_FILE}'...")
-    df = pd.read_csv(settings.DATA_FILE)
-    df.drop(columns=["Status", "Drug"], inplace=True, errors="ignore")
-    df.dropna(inplace=True)
-
-    X = df[FEATURE_NAMES]
-    y = df["Stage"]
-
-    categorical_features = X.select_dtypes(include=['object']).columns
-    
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), categorical_features)
-        ],
-        remainder="passthrough"
-    )
-
-    pipeline = Pipeline(steps=[
-        ("preprocessor", preprocessor),
-        ("model", RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced'))
-    ])
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    pipeline.fit(X_train, y_train)
-    
-    y_pred = pipeline.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    logging.info(f"Model training complete. Accuracy: {accuracy:.2f}")
-
-    joblib.dump(pipeline, settings.MODEL_FILE)
-    logging.info(f"Model saved to '{settings.MODEL_FILE}'")
-    return pipeline
-
 # --- Global Model Variable ---
-# This will hold the loaded machine learning model pipeline.
 model: Pipeline = None
 
 # --- Application Startup Event ---
 @app.on_event("startup")
 def load_model():
-    """Loads the model on application startup, or trains one if not found."""
+    """Loads the pre-trained model on application startup."""
     global model
     if os.path.exists(settings.MODEL_FILE):
         model = joblib.load(settings.MODEL_FILE)
         logging.info(f"Model loaded successfully from '{settings.MODEL_FILE}'.")
-    elif os.path.exists(settings.DATA_FILE):
-        logging.warning(f"Model file not found. Training a new model...")
-        model = train_model()
     else:
-        log_message = "No model file or training data found! The API cannot make predictions."
+        log_message = "No model file found! The API cannot make predictions."
         logging.critical(log_message)
         raise RuntimeError(log_message)
 
