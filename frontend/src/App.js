@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+// This assumes 'api.js' is in the same directory and handles the fetch logic.
+// The content for api.js is provided in a separate section below.
+import { predictStage } from './api';
 
 // --- Reusable Icon Component ---
-const Icon = ({ path, className = "w-6 h-6", isSolid = false }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill={isSolid ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+const Icon = ({ path, className = "w-6 h-6" }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
         {path}
     </svg>
 );
@@ -20,15 +23,13 @@ const SocialIcon = ({ type }) => {
 // --- About Modal Component ---
 const AboutModal = ({ onClose }) => (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in-up">
-        <div className="glass-pane p-8 rounded-2xl max-w-2xl w-full m-4 relative">
+        <div className="card-pane p-8 rounded-2xl max-w-2xl w-full m-4 relative">
             <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white transition">
                 <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />} />
             </button>
             <div className="text-center">
-                 <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-500">
-                    LiverGuardian
-                </h1>
-                <p className="text-slate-400 mt-2">AI-Powered Cirrhosis Stage Prediction Dashboard</p>
+                <h1 className="header-title text-3xl">LiverGuardian</h1>
+                <p className="text-muted mt-2">AI-Powered Cirrhosis Stage Prediction Dashboard</p>
             </div>
             <div className="mt-6 space-y-4 text-slate-300 text-sm">
                 <h2 className="text-lg font-bold text-cyan-400">About the Project</h2>
@@ -39,9 +40,9 @@ const AboutModal = ({ onClose }) => (
                     <div>
                         <p className="font-bold text-lg text-slate-100">Costas Pinto</p>
                         <div className="flex items-center flex-wrap gap-4 mt-2">
-                           <a href="https://www.linkedin.com/in/costaspinto/" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-cyan-400 transition flex items-center gap-1.5"><SocialIcon type="linkedin" /> LinkedIn</a>
-                           <a href="https://github.com/MrCoss" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-cyan-400 transition flex items-center gap-1.5"><SocialIcon type="github" /> GitHub</a>
-                           <a href="mailto:costaspinto312@gmail.com" className="text-slate-400 hover:text-cyan-400 transition flex items-center gap-1.5"><SocialIcon type="mail" /> Email</a>
+                            <a href="https://www.linkedin.com/in/costaspinto/" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-cyan-400 transition flex items-center gap-1.5"><SocialIcon type="linkedin" /> LinkedIn</a>
+                            <a href="https://github.com/MrCoss" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-cyan-400 transition flex items-center gap-1.5"><SocialIcon type="github" /> GitHub</a>
+                            <a href="mailto:costaspinto312@gmail.com" className="text-slate-400 hover:text-cyan-400 transition flex items-center gap-1.5"><SocialIcon type="mail" /> Email</a>
                         </div>
                     </div>
                 </div>
@@ -53,13 +54,13 @@ const AboutModal = ({ onClose }) => (
 // --- Input Field Component ---
 const InputField = ({ label, name, value, onChange, type = "number", step = "0.1", children }) => (
     <div className="relative group">
-        <label htmlFor={name} className="block text-xs font-medium text-slate-400 mb-1 transition-colors duration-300 group-focus-within:text-purple-400">{label}</label>
+        <label htmlFor={name} className="block text-xs font-medium text-muted mb-1 transition-colors duration-300 group-focus-within:text-purple-500">{label}</label>
         {type === 'select' ? (
-            <select name={name} id={name} value={value} onChange={onChange} className="form-input py-2 px-2 text-sm">
+            <select name={name} id={name} value={value} onChange={onChange} className="form-input text-sm">
                 {children}
             </select>
         ) : (
-            <input type={type} name={name} id={name} value={value} onChange={onChange} step={step} className="form-input py-2 px-2 text-sm" />
+            <input type={type} name={name} id={name} value={value} onChange={onChange} step={step} className="form-input text-sm" />
         )}
     </div>
 );
@@ -69,21 +70,21 @@ const GaugeChart = ({ stage, theme }) => {
     const chartRef = useRef(null);
     useEffect(() => {
         if (!chartRef.current) return;
-        const stageValue = stage || 0;
-        const textColor = theme === 'dark' ? '#f8fafc' : '#0f172a';
-        const mutedTextColor = theme === 'dark' ? '#94a3b8' : '#64748b';
-        const trackColor = theme === 'dark' ? '#1e293b' : '#e2e8f0';
+        const stageValue = stage ?? 0;
+        const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim();
+        const mutedTextColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
+        const trackColor = getComputedStyle(document.documentElement).getPropertyValue('--card-border').trim();
 
         const data = {
             datasets: [{
                 data: [stageValue, 4 - stageValue],
                 backgroundColor: (context) => {
-                    const {ctx, chartArea} = context.chart;
+                    const { ctx, chartArea } = context.chart;
                     if (!chartArea) return null;
                     if (context.dataIndex === 0) {
                         const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                        gradient.addColorStop(0, '#06b6d4');
-                        gradient.addColorStop(1, '#67e8f9');
+                        gradient.addColorStop(0, '#8b5cf6');
+                        gradient.addColorStop(1, '#ec4899');
                         return gradient;
                     }
                     return trackColor;
@@ -95,7 +96,7 @@ const GaugeChart = ({ stage, theme }) => {
         const centerText = {
             id: 'centerText',
             afterDraw(chart) {
-                const {ctx, chartArea} = chart;
+                const { ctx, chartArea } = chart;
                 const x = chartArea.left + chartArea.width / 2;
                 const y = chartArea.top + chartArea.height / 1.5;
                 ctx.save();
@@ -126,9 +127,9 @@ const FactorsRadarChart = ({ theme }) => {
     useEffect(() => {
         if (!chartRef.current) return;
         const ctx = chartRef.current.getContext('2d');
-        const pointLabelColor = theme === 'dark' ? '#94a3b8' : '#475569';
-        const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-        const pointBgColor = theme === 'dark' ? '#f8fafc' : '#0f172a';
+        const pointLabelColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
+        const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--card-border').trim();
+        const pointBgColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim();
 
         const gradient = ctx.createLinearGradient(0, 0, 0, 400);
         gradient.addColorStop(0, 'rgba(20, 184, 166, 0.5)');
@@ -168,34 +169,10 @@ const FactorsRadarChart = ({ theme }) => {
 
 // --- Recommendation Data ---
 const recommendationsData = {
-    1: {
-        risk: "Low", riskColor: "text-green-400", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
-        explanation: "Prognosis is generally excellent with proactive management of the underlying condition.",
-        dietary: "Focus on a balanced, low-fat diet. Increase antioxidant-rich foods like fruits and vegetables.",
-        lifestyle: "Avoid alcohol completely. Aim for at least 30 minutes of moderate exercise most days of the week.",
-        medical: "Regular check-ups with your hepatologist are crucial to monitor liver function and prevent progression."
-    },
-    2: {
-        risk: "Guarded", riskColor: "text-yellow-400", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />,
-        explanation: "Progression of fibrosis is possible. Medical monitoring and intervention are crucial.",
-        dietary: "Limit sodium intake to manage potential fluid retention. Ensure adequate protein from lean sources.",
-        lifestyle: "Strict alcohol avoidance is critical. Gentle exercise like walking or swimming is beneficial.",
-        medical: "Discuss potential treatments with your doctor to manage fibrosis and address the underlying cause."
-    },
-    3: {
-        risk: "High", riskColor: "text-orange-400", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />,
-        explanation: "Significant chance of developing complications. This stage requires intensive medical care.",
-        dietary: "A low-sodium, fluid-restricted diet is often necessary. Work with a dietitian for a personalized plan.",
-        lifestyle: "Avoid strenuous activities. Prioritize rest and manage stress to support your body.",
-        medical: "Intensive management of complications is required. Your doctor may discuss advanced therapies."
-    },
-    4: {
-        risk: "Critical", riskColor: "text-red-500", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />,
-        explanation: "Life-threatening complications are likely. A liver transplant is often the only definitive treatment.",
-        dietary: "Nutritional support is vital. A specialized diet focusing on soft, easily digestible, high-nutrient foods is key.",
-        lifestyle: "Focus on comfort and quality of life. Avoid any substances that are hard on the liver.",
-        medical: "Palliative care and discussions about liver transplantation are the primary focus at this stage."
-    }
+    1: { risk: "Low", riskColor: "text-green-500", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />, explanation: "Prognosis is generally excellent with proactive management of the underlying condition.", dietary: "Focus on a balanced, low-fat diet. Increase antioxidant-rich foods like fruits and vegetables.", lifestyle: "Avoid alcohol completely. Aim for at least 30 minutes of moderate exercise most days of the week.", medical: "Regular check-ups with your hepatologist are crucial to monitor liver function and prevent progression." },
+    2: { risk: "Guarded", riskColor: "text-yellow-500", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />, explanation: "Progression of fibrosis is possible. Medical monitoring and intervention are crucial.", dietary: "Limit sodium intake to manage potential fluid retention. Ensure adequate protein from lean sources.", lifestyle: "Strict alcohol avoidance is critical. Gentle exercise like walking or swimming is beneficial.", medical: "Discuss potential treatments with your doctor to manage fibrosis and address the underlying cause." },
+    3: { risk: "High", riskColor: "text-orange-500", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />, explanation: "Significant chance of developing complications. This stage requires intensive medical care.", dietary: "A low-sodium, fluid-restricted diet is often necessary. Work with a dietitian for a personalized plan.", lifestyle: "Avoid strenuous activities. Prioritize rest and manage stress to support your body.", medical: "Intensive management of complications is required. Your doctor may discuss advanced therapies." },
+    4: { risk: "Critical", riskColor: "text-red-500", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />, explanation: "Life-threatening complications are likely. A liver transplant is often the only definitive treatment.", dietary: "Nutritional support is vital. A specialized diet focusing on soft, easily digestible, high-nutrient foods is key.", lifestyle: "Focus on comfort and quality of life. Avoid any substances that are hard on the liver.", medical: "Palliative care and discussions about liver transplantation are the primary focus at this stage." }
 };
 
 // --- Risk Level Component ---
@@ -205,7 +182,7 @@ const RiskLevel = ({ stage }) => {
         <div className="text-center">
             <Icon path={riskIcon} className={`w-12 h-12 mx-auto ${riskColor}`} />
             <h3 className={`text-2xl font-bold mt-2 ${riskColor}`}>{risk}</h3>
-            <p className="text-sm text-slate-400 mt-1">{explanation}</p>
+            <p className="text-sm text-muted mt-1">{explanation}</p>
         </div>
     );
 };
@@ -221,17 +198,17 @@ const AiRecommendations = ({ stage }) => {
 
     return (
         <div className="space-y-4">
-             <h2 className="text-xl font-bold text-cyan-400">AI Recommendations</h2>
+             <h2 className="text-xl font-bold header-title-cyan">AI Recommendations</h2>
             <RiskLevel stage={stage} />
-            <div className="border-t border-slate-700 my-4"></div>
+            <div className="border-t border-divider my-4"></div>
             {Object.entries(recs).filter(([key]) => ['dietary', 'lifestyle', 'medical'].includes(key)).map(([key, value]) => (
                 <div key={key} className="flex items-start gap-3">
                     <div className="flex-shrink-0 bg-slate-800 p-2 rounded-lg mt-1">
                         <Icon path={iconMap[key]} className="w-5 h-5 text-cyan-400" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-200 capitalize">{key}</h3>
-                        <p className="text-sm text-slate-400">{value}</p>
+                        <h3 className="font-bold text-color capitalize">{key}</h3>
+                        <p className="text-sm text-muted">{value}</p>
                     </div>
                 </div>
             ))}
@@ -256,9 +233,9 @@ const BiomarkerStatus = ({ formData }) => {
                 const statusColor = isNormal ? 'bg-green-500' : 'bg-red-500';
                 return (
                     <div key={name} className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">{name}</span>
+                        <span className="text-muted">{name}</span>
                         <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-200">{val}</span>
+                            <span className="font-bold text-color">{val}</span>
                             <span className={`w-2.5 h-2.5 rounded-full ${statusColor} animate-pulse-short`}></span>
                         </div>
                     </div>
@@ -268,13 +245,18 @@ const BiomarkerStatus = ({ formData }) => {
     );
 };
 
+
 // --- Main App Component ---
 const App = () => {
     const [prediction, setPrediction] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showAbout, setShowAbout] = useState(false);
-    const [theme, setTheme] = useState('dark');
+    
+    // Set default theme based on user's system preference
+    const [theme, setTheme] = useState(
+        window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    );
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
@@ -298,45 +280,19 @@ const App = () => {
         setError(null);
         setPrediction(null);
 
+        // This array must match the FEATURE_NAMES order in the backend
         const featureVector = [
-            parseFloat(formData.Age),
-            parseFloat(formData.Sex === 'M' ? 1 : 0),
-            parseFloat(formData.Ascites === 'Y' ? 1 : 0),
-            parseFloat(formData.Hepatomegaly === 'Y' ? 1 : 0),
-            parseFloat(formData.Spiders === 'Y' ? 1 : 0),
-            parseFloat(formData.Edema === 'Y' ? 1 : (formData.Edema === 'S' ? 0.5 : 0)),
-            parseFloat(formData.Bilirubin),
-            parseFloat(formData.Cholesterol),
-            parseFloat(formData.Albumin),
-            parseFloat(formData.Copper),
-            parseFloat(formData.Alk_Phos),
-            parseFloat(formData.SGOT),
-            parseFloat(formData.Tryglicerides),
-            parseFloat(formData.Platelets),
+            parseFloat(formData.Age), formData.Sex, formData.Ascites,
+            formData.Hepatomegaly, formData.Spiders, formData.Edema,
+            parseFloat(formData.Bilirubin), parseFloat(formData.Cholesterol),
+            parseFloat(formData.Albumin), parseFloat(formData.Copper),
+            parseFloat(formData.Alk_Phos), parseFloat(formData.SGOT),
+            parseFloat(formData.Tryglicerides), parseFloat(formData.Platelets),
             parseFloat(formData.Prothrombin),
         ];
         
         try {
-            const response = await fetch('http://127.0.0.1:5000/predict', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: [featureVector] })
-            });
-
-            if (!response.ok) {
-                 const errData = await response.json();
-                 let errorMessage = 'Prediction service error.';
-                 if (errData && errData.detail) {
-                     if (typeof errData.detail === 'string' && errData.detail.includes("Input data has")) {
-                         errorMessage = "Data format error: The number of features sent does not match the model's expectation. Please check the data.";
-                     } else {
-                         errorMessage = errData.detail;
-                     }
-                 }
-                 throw new Error(errorMessage);
-            }
-
-            const result = await response.json();
+            const result = await predictStage({ data: [featureVector] });
             setTimeout(() => {
                 setPrediction(result.prediction[0]);
                 setIsLoading(false);
@@ -401,17 +357,15 @@ This report is generated by an AI model and is for informational purposes only. 
         <div className="min-h-screen p-4 sm:p-6 lg:p-8 futuristic-bg">
             <div className="max-w-7xl mx-auto">
                 <header className="flex justify-between items-center mb-10 animate-fade-in-up">
-                     <div className="text-left">
-                        <h1 className="header-title">
-                            LiverGuardian
-                        </h1>
-                        <p className="text-muted mt-1 text-lg">AI-Powered Cirrhosis Stage Prediction</p>
-                    </div>
+                       <div className="text-left">
+                           <h1 className="header-title text-4xl">LiverGuardian</h1>
+                           <p className="text-muted mt-1 text-lg">AI-Powered Cirrhosis Stage Prediction</p>
+                       </div>
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="glass-pane p-2 rounded-full text-muted hover:text-white transition">
+                        <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="card-pane p-2 rounded-full text-muted hover:text-color transition">
                             {theme === 'dark' ? <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.95-4.243l-1.59-1.59M3 12H.75m1.59-4.95l1.59 1.59M12 6.75A5.25 5.25 0 006.75 12a5.25 5.25 0 005.25 5.25 5.25 5.25 0 005.25-5.25A5.25 5.25 0 0012 6.75z" />} /> : <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />} />}
                         </button>
-                        <button onClick={() => setShowAbout(true)} className="glass-pane p-2 rounded-full text-muted hover:text-white transition">
+                        <button onClick={() => setShowAbout(true)} className="card-pane p-2 rounded-full text-muted hover:text-color transition">
                             <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />} />
                         </button>
                     </div>
@@ -419,43 +373,29 @@ This report is generated by an AI model and is for informational purposes only. 
 
                 <main className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     {/* --- Left Column: Patient Data Input --- */}
-                     <div className="lg:col-span-1 glass-pane p-6 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-                         <h2 className="text-xl font-bold mb-4 text-purple-400">Patient Data Input</h2>
+                     <div className="lg:col-span-1 card-pane p-6 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+                         <h2 className="text-xl font-bold mb-4 header-title-purple">Patient Data Input</h2>
                          <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-300 mb-2">General</h3>
+                                <h3 className="text-sm font-semibold text-muted mb-2">General</h3>
                                 <div className="grid grid-cols-2 gap-3">
                                     <InputField label="Age" name="Age" value={formData.Age} onChange={handleInputChange} type="number" step="1" />
-                                    <InputField label="Sex" name="Sex" value={formData.Sex} onChange={handleInputChange} type="select">
-                                        <option value="M">Male</option><option value="F">Female</option>
-                                    </InputField>
-                                     <InputField label="Status" name="Status" value={formData.Status} onChange={handleInputChange} type="select">
-                                        <option value="C">Completed</option><option value="D">Discontinued</option><option value="CL">Completed Liver</option>
-                                    </InputField>
-                                    <InputField label="Drug" name="Drug" value={formData.Drug} onChange={handleInputChange} type="select">
-                                        <option value="Placebo">Placebo</option><option value="D-penicillamine">D-penicillamine</option>
-                                    </InputField>
-                                </div>
-                            </div>
-                             <div>
-                                <h3 className="text-sm font-semibold text-slate-300 mb-2">Observations</h3>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <InputField label="Ascites" name="Ascites" value={formData.Ascites} onChange={handleInputChange} type="select">
-                                        <option value="N">No</option><option value="Y">Yes</option>
-                                    </InputField>
-                                    <InputField label="Hepatomegaly" name="Hepatomegaly" value={formData.Hepatomegaly} onChange={handleInputChange} type="select">
-                                        <option value="N">No</option><option value="Y">Yes</option>
-                                    </InputField>
-                                    <InputField label="Spiders" name="Spiders" value={formData.Spiders} onChange={handleInputChange} type="select">
-                                        <option value="N">No</option><option value="Y">Yes</option>
-                                    </InputField>
-                                    <InputField label="Edema" name="Edema" value={formData.Edema} onChange={handleInputChange} type="select">
-                                        <option value="N">No</option><option value="S">Slight</option><option value="Y">Yes</option>
-                                    </InputField>
+                                    <InputField label="Sex" name="Sex" value={formData.Sex} onChange={handleInputChange} type="select"><option value="M">Male</option><option value="F">Female</option></InputField>
+                                    <InputField label="Status" name="Status" value={formData.Status} onChange={handleInputChange} type="select"><option value="C">Completed</option><option value="D">Discontinued</option><option value="CL">Completed Liver</option></InputField>
+                                    <InputField label="Drug" name="Drug" value={formData.Drug} onChange={handleInputChange} type="select"><option value="Placebo">Placebo</option><option value="D-penicillamine">D-penicillamine</option></InputField>
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-sm font-semibold text-slate-300 mb-2">Lab Results</h3>
+                                <h3 className="text-sm font-semibold text-muted mb-2">Observations</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <InputField label="Ascites" name="Ascites" value={formData.Ascites} onChange={handleInputChange} type="select"><option value="N">No</option><option value="Y">Yes</option></InputField>
+                                    <InputField label="Hepatomegaly" name="Hepatomegaly" value={formData.Hepatomegaly} onChange={handleInputChange} type="select"><option value="N">No</option><option value="Y">Yes</option></InputField>
+                                    <InputField label="Spiders" name="Spiders" value={formData.Spiders} onChange={handleInputChange} type="select"><option value="N">No</option><option value="Y">Yes</option></InputField>
+                                    <InputField label="Edema" name="Edema" value={formData.Edema} onChange={handleInputChange} type="select"><option value="N">No</option><option value="S">Slight</option><option value="Y">Yes</option></InputField>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-muted mb-2">Lab Results</h3>
                                 <div className="grid grid-cols-2 gap-3">
                                     <InputField label="Bilirubin" name="Bilirubin" value={formData.Bilirubin} onChange={handleInputChange} />
                                     <InputField label="Cholesterol" name="Cholesterol" value={formData.Cholesterol} onChange={handleInputChange} />
@@ -476,35 +416,35 @@ This report is generated by an AI model and is for informational purposes only. 
                                 {error && <p className="text-red-400 text-sm mt-2 text-center">{error}</p>}
                             </div>
                          </form>
-                    </div>
+                     </div>
 
                     {/* --- Center Column: Prediction --- */}
-                    <div className="lg:col-span-2 glass-pane p-6 animate-fade-in-up flex flex-col justify-between" style={{ animationDelay: '200ms' }}>
-                        <div>
-                            <h2 className="text-xl font-bold mb-4 text-cyan-400">Prediction Result</h2>
-                            <GaugeChart stage={prediction} theme={theme}/>
-                        </div>
-                        {prediction ? (
-                            <div className="mt-4 space-y-4">
-                                <AiRecommendations stage={prediction} />
-                                <button onClick={handleDownloadReport} className="button-secondary">
-                                    <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />} className="w-5 h-5 mr-2" />
-                                    Download Report
-                                </button>
-                            </div>
-                        ) : null}
-                    </div>
+                     <div className="lg:col-span-2 card-pane p-6 animate-fade-in-up flex flex-col justify-between" style={{ animationDelay: '200ms' }}>
+                         <div>
+                             <h2 className="text-xl font-bold mb-4 header-title-cyan">Prediction Result</h2>
+                             <GaugeChart stage={prediction} theme={theme}/>
+                         </div>
+                         {prediction && (
+                             <div className="mt-4 space-y-4">
+                                 <AiRecommendations stage={prediction} />
+                                 <button onClick={handleDownloadReport} className="button-secondary">
+                                     <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />} className="w-5 h-5 mr-2" />
+                                     Download Report
+                                 </button>
+                             </div>
+                         )}
+                     </div>
 
                     {/* --- Right Column: Data Insights --- */}
                     <div className="lg:col-span-1 flex flex-col gap-8">
-                        <div className="glass-pane p-6 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-                             <h2 className="text-xl font-bold mb-4 text-teal-400">Key Predictive Factors</h2>
-                             <FactorsRadarChart theme={theme}/>
-                        </div>
-                        <div className="glass-pane p-6 animate-fade-in-up" style={{ animationDelay: '500ms' }}>
-                             <h2 className="text-xl font-bold mb-4 text-teal-400">Biomarker Status</h2>
-                             <BiomarkerStatus formData={formData} />
-                        </div>
+                         <div className="card-pane p-6 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+                               <h2 className="text-xl font-bold mb-4 header-title-teal">Key Predictive Factors</h2>
+                               <FactorsRadarChart theme={theme}/>
+                         </div>
+                         <div className="card-pane p-6 animate-fade-in-up" style={{ animationDelay: '500ms' }}>
+                               <h2 className="text-xl font-bold mb-4 header-title-teal">Biomarker Status</h2>
+                               <BiomarkerStatus formData={formData} />
+                         </div>
                     </div>
                 </main>
             </div>
@@ -514,4 +454,3 @@ This report is generated by an AI model and is for informational purposes only. 
 };
 
 export default App;
-

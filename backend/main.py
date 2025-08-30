@@ -24,8 +24,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # dev
-        "https://liverguardian-frontend.onrender.com",  # deployed frontend
+        "http://localhost:3000",  # Default React Dev server
+        "http://localhost:5173",  # Vite Dev server
+        "https://liverguardian-frontend.onrender.com",  # Deployed frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -52,17 +53,22 @@ def train_model():
     X = df[FEATURE_NAMES]
     y = df["Stage"]
 
-    categorical_cols = ["Sex", "Ascites", "Hepatomegaly", "Spiders", "Edema"]
+    # Define which columns are categorical
+    categorical_features = X.select_dtypes(include=['object']).columns
+    
+    # Create a preprocessor to handle categorical features
+    # OrdinalEncoder will convert string categories to numbers
     preprocessor = ColumnTransformer(
         transformers=[
-            ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), categorical_cols)
+            ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), categorical_features)
         ],
-        remainder="passthrough"
+        remainder="passthrough" # Keep numerical columns as they are
     )
 
+    # Create the full pipeline
     pipeline = Pipeline(steps=[
         ("preprocessor", preprocessor),
-        ("model", RandomForestClassifier(n_estimators=100, random_state=42))
+        ("model", RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced'))
     ])
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -87,7 +93,8 @@ def load_model():
         print("⚠️ Model not found, training new one...")
         model = train_model()
     else:
-        raise RuntimeError("❌ No model file or training data found!")
+        # This will stop the server from starting if data is missing, which is good for debugging
+        raise RuntimeError("❌ No model file or training data found! Please add liver_cirrhosis_clean.csv to the backend directory.")
 
 # --- Health Check ---
 @app.get("/health")
@@ -102,8 +109,12 @@ class PredictionRequest(BaseModel):
 @app.post("/predict")
 async def predict(request: PredictionRequest):
     try:
+        # Create a DataFrame with the correct column names, as the pipeline expects it
         input_data = pd.DataFrame(request.data, columns=FEATURE_NAMES)
+        
+        # The pipeline will automatically handle the preprocessing (like converting 'M'/'F' to numbers)
         prediction = model.predict(input_data)
+        
         return {"prediction": prediction.tolist()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error during prediction: {str(e)}")
