@@ -24,7 +24,6 @@ services:
     name: liverguardian-frontend
     env: static
     plan: free
-    region: oregon
     branch: main
     rootDir: frontend
     buildCommand: |
