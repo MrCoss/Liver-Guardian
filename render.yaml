@@ -20,8 +20,9 @@ services:
   # ======================
   # Frontend (React static site)
   # ======================
-  - type: static
+  - type: web
     name: liverguardian-frontend
+    env: static
     branch: main
     rootDir: frontend
     buildCommand: |
