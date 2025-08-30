@@ -20,7 +20,7 @@ const SocialIcon = ({ type }) => {
 // --- About Modal Component ---
 const AboutModal = ({ onClose }) => (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in-up">
-        <div className="glass-pane p-8 rounded-2xl max-w-2xl w-full m-4 relative border-cyan-500/30">
+        <div className="glass-pane p-8 rounded-2xl max-w-2xl w-full m-4 relative">
             <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white transition">
                 <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />} />
             </button>
@@ -65,11 +65,15 @@ const InputField = ({ label, name, value, onChange, type = "number", step = "0.1
 );
 
 // --- Gauge Chart Component for Prediction ---
-const GaugeChart = ({ stage }) => {
+const GaugeChart = ({ stage, theme }) => {
     const chartRef = useRef(null);
     useEffect(() => {
         if (!chartRef.current) return;
         const stageValue = stage || 0;
+        const textColor = theme === 'dark' ? '#f8fafc' : '#0f172a';
+        const mutedTextColor = theme === 'dark' ? '#94a3b8' : '#64748b';
+        const trackColor = theme === 'dark' ? '#1e293b' : '#e2e8f0';
+
         const data = {
             datasets: [{
                 data: [stageValue, 4 - stageValue],
@@ -82,7 +86,7 @@ const GaugeChart = ({ stage }) => {
                         gradient.addColorStop(1, '#67e8f9');
                         return gradient;
                     }
-                    return '#1e293b';
+                    return trackColor;
                 },
                 borderColor: 'transparent',
                 borderRadius: 20,
@@ -97,11 +101,11 @@ const GaugeChart = ({ stage }) => {
                 ctx.save();
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.font = 'bold 64px Inter, sans-serif';
-                ctx.fillStyle = '#f8fafc';
+                ctx.font = `bold 64px Inter, sans-serif`;
+                ctx.fillStyle = textColor;
                 ctx.fillText(stageValue, x, y - 25);
-                ctx.font = '18px Inter, sans-serif';
-                ctx.fillStyle = '#94a3b8';
+                ctx.font = `18px Inter, sans-serif`;
+                ctx.fillStyle = mutedTextColor;
                 ctx.fillText('Stage', x, y + 20);
                 ctx.restore();
             }
@@ -112,19 +116,24 @@ const GaugeChart = ({ stage }) => {
             plugins: [centerText],
         });
         return () => chartInstance.destroy();
-    }, [stage]);
+    }, [stage, theme]);
     return <div className="relative w-full h-48"><canvas ref={chartRef}></canvas></div>;
 };
 
 // --- Radar Chart for Predictive Factors ---
-const FactorsRadarChart = () => {
+const FactorsRadarChart = ({ theme }) => {
     const chartRef = useRef(null);
     useEffect(() => {
         if (!chartRef.current) return;
         const ctx = chartRef.current.getContext('2d');
+        const pointLabelColor = theme === 'dark' ? '#94a3b8' : '#475569';
+        const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+        const pointBgColor = theme === 'dark' ? '#f8fafc' : '#0f172a';
+
         const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(20, 184, 166, 0.5)'); // Teal
+        gradient.addColorStop(0, 'rgba(20, 184, 166, 0.5)');
         gradient.addColorStop(1, 'rgba(20, 184, 166, 0)');
+        
         const chart = new window.Chart(ctx, {
             type: 'radar',
             data: {
@@ -133,8 +142,8 @@ const FactorsRadarChart = () => {
                     label: 'Importance',
                     data: [0.95, 0.88, 0.85, 0.76, 0.65, 0.58],
                     backgroundColor: gradient,
-                    borderColor: '#14b8a6', // Teal
-                    pointBackgroundColor: '#f8fafc',
+                    borderColor: '#14b8a6',
+                    pointBackgroundColor: pointBgColor,
                     pointBorderColor: '#14b8a6',
                 }]
             },
@@ -144,52 +153,44 @@ const FactorsRadarChart = () => {
                 plugins: { legend: { display: false } },
                 scales: {
                     r: {
-                        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        pointLabels: { color: '#94a3b8', font: { size: 12, weight: 'bold' } },
+                        angleLines: { color: gridColor },
+                        grid: { color: gridColor },
+                        pointLabels: { color: pointLabelColor, font: { size: 12, weight: 'bold' } },
                         ticks: { display: false, stepSize: 0.25 }
                     }
                 }
             }
         });
         return () => chart.destroy();
-    }, []);
+    }, [theme]);
     return <div className="relative w-full h-64"><canvas ref={chartRef}></canvas></div>;
 };
 
 // --- Recommendation Data ---
 const recommendationsData = {
     1: {
-        risk: "Low",
-        riskColor: "text-green-400",
-        riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
+        risk: "Low", riskColor: "text-green-400", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
         explanation: "Prognosis is generally excellent with proactive management of the underlying condition.",
         dietary: "Focus on a balanced, low-fat diet. Increase antioxidant-rich foods like fruits and vegetables.",
         lifestyle: "Avoid alcohol completely. Aim for at least 30 minutes of moderate exercise most days of the week.",
         medical: "Regular check-ups with your hepatologist are crucial to monitor liver function and prevent progression."
     },
     2: {
-        risk: "Guarded",
-        riskColor: "text-yellow-400",
-        riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />,
+        risk: "Guarded", riskColor: "text-yellow-400", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />,
         explanation: "Progression of fibrosis is possible. Medical monitoring and intervention are crucial.",
         dietary: "Limit sodium intake to manage potential fluid retention. Ensure adequate protein from lean sources.",
         lifestyle: "Strict alcohol avoidance is critical. Gentle exercise like walking or swimming is beneficial.",
         medical: "Discuss potential treatments with your doctor to manage fibrosis and address the underlying cause."
     },
     3: {
-        risk: "High",
-        riskColor: "text-orange-400",
-        riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />,
+        risk: "High", riskColor: "text-orange-400", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />,
         explanation: "Significant chance of developing complications. This stage requires intensive medical care.",
         dietary: "A low-sodium, fluid-restricted diet is often necessary. Work with a dietitian for a personalized plan.",
         lifestyle: "Avoid strenuous activities. Prioritize rest and manage stress to support your body.",
         medical: "Intensive management of complications is required. Your doctor may discuss advanced therapies."
     },
     4: {
-        risk: "Critical",
-        riskColor: "text-red-500",
-        riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />,
+        risk: "Critical", riskColor: "text-red-500", riskIcon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />,
         explanation: "Life-threatening complications are likely. A liver transplant is often the only definitive treatment.",
         dietary: "Nutritional support is vital. A specialized diet focusing on soft, easily digestible, high-nutrient foods is key.",
         lifestyle: "Focus on comfort and quality of life. Avoid any substances that are hard on the liver.",
@@ -273,6 +274,11 @@ const App = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showAbout, setShowAbout] = useState(false);
+    const [theme, setTheme] = useState('dark');
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+    }, [theme]);
 
     const [formData, setFormData] = useState({
         'Status': 'C', 'Drug': 'Placebo', 'Age': 50, 'Sex': 'M', 'Ascites': 'N',
@@ -292,7 +298,7 @@ const App = () => {
         setError(null);
         setPrediction(null);
 
-       const featureVector = [
+        const featureVector = [
             parseFloat(formData.Age),
             parseFloat(formData.Sex === 'M' ? 1 : 0),
             parseFloat(formData.Ascites === 'Y' ? 1 : 0),
@@ -392,18 +398,23 @@ This report is generated by an AI model and is for informational purposes only. 
     };
     
     return (
-        <div className="min-h-screen text-slate-200 p-4 sm:p-6 lg:p-8 futuristic-bg">
+        <div className="min-h-screen p-4 sm:p-6 lg:p-8 futuristic-bg">
             <div className="max-w-7xl mx-auto">
                 <header className="flex justify-between items-center mb-10 animate-fade-in-up">
                      <div className="text-left">
-                        <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-500">
+                        <h1 className="header-title">
                             LiverGuardian
                         </h1>
-                        <p className="text-slate-400 mt-1 text-lg">AI-Powered Cirrhosis Stage Prediction</p>
+                        <p className="text-muted mt-1 text-lg">AI-Powered Cirrhosis Stage Prediction</p>
                     </div>
-                    <button onClick={() => setShowAbout(true)} className="glass-pane p-2 rounded-full text-slate-400 hover:text-white transition hover:border-cyan-500/50">
-                        <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />} />
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="glass-pane p-2 rounded-full text-muted hover:text-white transition">
+                            {theme === 'dark' ? <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.95-4.243l-1.59-1.59M3 12H.75m1.59-4.95l1.59 1.59M12 6.75A5.25 5.25 0 006.75 12a5.25 5.25 0 005.25 5.25 5.25 5.25 0 005.25-5.25A5.25 5.25 0 0012 6.75z" />} /> : <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />} />}
+                        </button>
+                        <button onClick={() => setShowAbout(true)} className="glass-pane p-2 rounded-full text-muted hover:text-white transition">
+                            <Icon path={<path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />} />
+                        </button>
+                    </div>
                 </header>
 
                 <main className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -471,7 +482,7 @@ This report is generated by an AI model and is for informational purposes only. 
                     <div className="lg:col-span-2 glass-pane p-6 animate-fade-in-up flex flex-col justify-between" style={{ animationDelay: '200ms' }}>
                         <div>
                             <h2 className="text-xl font-bold mb-4 text-cyan-400">Prediction Result</h2>
-                            <GaugeChart stage={prediction} />
+                            <GaugeChart stage={prediction} theme={theme}/>
                         </div>
                         {prediction ? (
                             <div className="mt-4 space-y-4">
@@ -488,7 +499,7 @@ This report is generated by an AI model and is for informational purposes only. 
                     <div className="lg:col-span-1 flex flex-col gap-8">
                         <div className="glass-pane p-6 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
                              <h2 className="text-xl font-bold mb-4 text-teal-400">Key Predictive Factors</h2>
-                             <FactorsRadarChart />
+                             <FactorsRadarChart theme={theme}/>
                         </div>
                         <div className="glass-pane p-6 animate-fade-in-up" style={{ animationDelay: '500ms' }}>
                              <h2 className="text-xl font-bold mb-4 text-teal-400">Biomarker Status</h2>

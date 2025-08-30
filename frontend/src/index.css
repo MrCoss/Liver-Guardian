@@ -2,104 +2,163 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-    background-color: #020617; /* slate-900 */
+/* --- THEME VARIABLES --- */
+:root {
+  --background-start: #000000;
+  --background-end: #020617;
+  --text-color: #e2e8f0;
+  --text-muted: #94a3b8;
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(56, 189, 248, 0.1);
+  --input-bg: #1e293b;
+  --input-border: #334155;
+  --input-focus-border: #38bdf8;
+  --header-text-start: #38bdf8; /* sky-500 */
+  --header-text-end: #0ea5e9; /* cyan-400 */
 }
 
-/* Futuristic Background */
+html[data-theme='light'] {
+  --background-start: #f1f5f9;
+  --background-end: #e2e8f0;
+  --text-color: #0f172a;
+  --text-muted: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --input-bg: #f8fafc;
+  --input-border: #cbd5e1;
+  --input-focus-border: #0ea5e9;
+  --header-text-start: #0369a1;
+  --header-text-end: #0891b2;
+}
+
+/* --- BASE STYLES --- */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--background-start);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- FUTURISTIC BACKGROUND --- */
 .futuristic-bg {
-    position: relative;
-    overflow: hidden;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--background-start), var(--background-end));
 }
 
 .futuristic-bg::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-        linear-gradient(rgba(2, 6, 23, 0) 50%, rgba(2, 6, 23, 1) 100%),
-        radial-gradient(ellipse at center, rgba(14, 165, 233, 0.1) 0%, transparent 70%);
-    background-size: 100% 100%, 100% 100%;
-    z-index: 0;
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+  opacity: 0.5;
+  z-index: 0;
 }
 
-main, header {
-    position: relative;
-    z-index: 1;
-}
-
-/* Glass Pane Effect */
+/* --- COMPONENT STYLES --- */
 .glass-pane {
-    background: rgba(15, 23, 42, 0.6); /* slate-900 with opacity */
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(51, 65, 85, 0.5); /* slate-700 with opacity */
-    border-radius: 1rem;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Form Input Styling */
 .form-input {
-    @apply w-full bg-slate-900/50 border-2 border-slate-700 rounded-md transition-all duration-300 focus:border-purple-500 focus:ring-0 focus:bg-slate-800 text-slate-200;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-color);
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
 }
 
-/* --- NEW Button Styles & Animations --- */
+.form-input:focus {
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
+}
+
+/* --- BUTTON STYLES & ANIMATIONS --- */
 .button-primary, .button-secondary {
-  @apply relative inline-flex items-center justify-center w-full px-4 py-3 font-bold text-white transition-all duration-300 ease-in-out rounded-lg overflow-hidden text-sm;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
 }
 
 .button-primary {
-  background: linear-gradient(to right, #6d28d9, #4f46e5); /* Purple to Indigo */
-  box-shadow: 0 0 0px rgba(167, 139, 250, 0); /* Start with no glow */
-  transition: box-shadow 0.3s ease-in-out;
+  background: linear-gradient(to right, #6d28d9, #4f46e5); /* purple-700 to indigo-600 */
+  color: white;
 }
+
 .button-secondary {
-  background: linear-gradient(to right, #374151, #4b5563); /* Gray */
-  box-shadow: 0 0 0px rgba(107, 114, 128, 0); /* Start with no glow */
-  transition: box-shadow 0.3s ease-in-out;
+  background: linear-gradient(to right, #475569, #334155); /* slate-600 to slate-700 */
+  color: white;
 }
 
-.button-primary:hover {
-    box-shadow: 0 0 20px rgba(167, 139, 250, 0.5); /* Glowing shadow on hover */
-}
-.button-secondary:hover {
-    box-shadow: 0 0 20px rgba(107, 114, 128, 0.5);
-}
-
-
-.button-primary:disabled, .button-secondary:disabled {
-    background: linear-gradient(to right, #475569, #334155);
-    cursor: not-allowed;
-    box-shadow: none;
-}
-
-.button-primary span, .button-secondary span {
-  @apply relative z-10 flex items-center justify-center;
+.button-primary::before, .button-secondary::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
+  opacity: 0;
 }
 
+.button-primary:hover::before, .button-secondary:hover::before {
+  width: 200%;
+  height: 200%;
+  opacity: 1;
+}
 
-/* Animation Utilities */
+
+/* --- ANIMATIONS --- */
 @keyframes fade-in-up {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+
 .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out forwards;
+  animation: fade-in-up 0.6s ease-out forwards;
 }
 
 @keyframes pulse-short {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.1); opacity: 0.7; }
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
 }
 .animate-pulse-short {
-    animation: pulse-short 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation: pulse-short 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
