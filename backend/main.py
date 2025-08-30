@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import OrdinalEncoder
+from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 import joblib
 import uvicorn
@@ -22,7 +23,10 @@ app = FastAPI(
 # --- CORS Configuration ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",  # dev
+        "https://liverguardian-frontend.onrender.com",  # deployed frontend
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,34 +45,33 @@ FEATURE_NAMES = [
 
 # --- Model Training ---
 def train_model():
-    """Train and save the model pipeline."""
     df = pd.read_csv(DATA_FILE)
-
-    # Drop unused columns if present
     df.drop(columns=["Status", "Drug"], inplace=True, errors="ignore")
     df.dropna(inplace=True)
 
     X = df[FEATURE_NAMES]
     y = df["Stage"]
 
-    # Encode categorical variables consistently
     categorical_cols = ["Sex", "Ascites", "Hepatomegaly", "Spiders", "Edema"]
-    encoder = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("cat", OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1), categorical_cols)
+        ],
+        remainder="passthrough"
+    )
 
     pipeline = Pipeline(steps=[
-        ("encoder", encoder),
+        ("preprocessor", preprocessor),
         ("model", RandomForestClassifier(n_estimators=100, random_state=42))
     ])
 
-    # Train/test split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
     pipeline.fit(X_train, y_train)
     y_pred = pipeline.predict(X_test)
-    print(f"Model Accuracy: {accuracy_score(y_test, y_pred):.2f}")
+    print(f"✅ Model Accuracy: {accuracy_score(y_test, y_pred):.2f}")
 
     joblib.dump(pipeline, MODEL_FILE)
-    print(f"Model trained and saved to {MODEL_FILE}")
+    print(f"✅ Model saved to {MODEL_FILE}")
     return pipeline
 
 # --- Load or Train Model on Startup ---
@@ -81,12 +84,12 @@ def load_model():
         model = joblib.load(MODEL_FILE)
         print("✅ Model loaded from file.")
     elif os.path.exists(DATA_FILE):
-        print("⚠️ Model not found, training a new one...")
+        print("⚠️ Model not found, training new one...")
         model = train_model()
     else:
-        raise RuntimeError("No model file or training data found!")
+        raise RuntimeError("❌ No model file or training data found!")
 
-# --- Health Check Endpoint ---
+# --- Health Check ---
 @app.get("/health")
 def health():
     return {"status": "ok"}

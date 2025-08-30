@@ -10,7 +10,7 @@ const Icon = ({ path, className = "w-6 h-6", isSolid = false }) => (
 // --- Social Link Icons for About Modal ---
 const SocialIcon = ({ type }) => {
     const icons = {
-        linkedin: <><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" fill="currentColor" strokeWidth="0" /><circle cx="4" cy="4" r="2" fill="currentColor" strokeWidth="0" /></>,
+        linkedin: <><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" fill="currentColor" strokeWidth="0"/><circle cx="4" cy="4" r="2" fill="currentColor" strokeWidth="0"/></>,
         github: <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22" />,
         mail: <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25-2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
     };
@@ -292,12 +292,13 @@ const App = () => {
         setError(null);
         setPrediction(null);
 
-        const featureVector = [
+       const featureVector = [
             parseFloat(formData.Age),
-            formData.Ascites === 'Y' ? 1.0 : 0.0,
-            formData.Hepatomegaly === 'Y' ? 1.0 : 0.0,
-            formData.Spiders === 'Y' ? 1.0 : 0.0,
-            formData.Edema === 'Y' ? 1.0 : (formData.Edema === 'S' ? 0.5 : 0.0),
+            parseFloat(formData.Sex === 'M' ? 1 : 0),
+            parseFloat(formData.Ascites === 'Y' ? 1 : 0),
+            parseFloat(formData.Hepatomegaly === 'Y' ? 1 : 0),
+            parseFloat(formData.Spiders === 'Y' ? 1 : 0),
+            parseFloat(formData.Edema === 'Y' ? 1 : (formData.Edema === 'S' ? 0.5 : 0)),
             parseFloat(formData.Bilirubin),
             parseFloat(formData.Cholesterol),
             parseFloat(formData.Albumin),
@@ -307,15 +308,8 @@ const App = () => {
             parseFloat(formData.Tryglicerides),
             parseFloat(formData.Platelets),
             parseFloat(formData.Prothrombin),
-            formData.Status === 'C' ? 1.0 : 0.0,
-            formData.Status === 'CL' ? 1.0 : 0.0,
-            formData.Status === 'D' ? 1.0 : 0.0,
-            formData.Drug === 'D-penicillamine' ? 1.0 : 0.0,
-            formData.Drug === 'Placebo' ? 1.0 : 0.0,
-            formData.Sex === 'F' ? 1.0 : 0.0,
-            formData.Sex === 'M' ? 1.0 : 0.0
         ];
-
+        
         try {
             const response = await fetch('http://127.0.0.1:5000/predict', {
                 method: 'POST',
@@ -324,8 +318,16 @@ const App = () => {
             });
 
             if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.detail || 'Prediction service error.');
+                 const errData = await response.json();
+                 let errorMessage = 'Prediction service error.';
+                 if (errData && errData.detail) {
+                     if (typeof errData.detail === 'string' && errData.detail.includes("Input data has")) {
+                         errorMessage = "Data format error: The number of features sent does not match the model's expectation. Please check the data.";
+                     } else {
+                         errorMessage = errData.detail;
+                     }
+                 }
+                 throw new Error(errorMessage);
             }
 
             const result = await response.json();
