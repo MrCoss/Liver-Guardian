@@ -33,7 +33,7 @@ services:
     publishDir: build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://liverguardian-backend.onrender.com  # Replace with backend Render URL after deploy
+        value: ${liverguardian-backend.url}
     routes:
       - type: rewrite
         source: /*
