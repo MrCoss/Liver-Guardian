@@ -30,7 +30,7 @@ services:
     buildCommand: |
       npm install
       npm run build
-    publishDir: build
+    staticPublishPath: build
     envVars:
       - key: REACT_APP_API_URL
         value: ${liverguardian-backend.url}
